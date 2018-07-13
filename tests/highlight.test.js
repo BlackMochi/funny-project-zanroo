@@ -10,9 +10,9 @@ const message = {
 	desc: 'xxx bnk48 xxxx ornbnk48 bnk',
 	raw_desc: '<img src="yyy" title="bnk48"/> xxx bnk48 xxxx <br /> ornbnk48 bnk',
 	keywords: [{
-		hls: [4, 10, 15, 20]
+		hls: [4, 10, 18, 23]
 	}, {
-		hls: [16, 23]
+		hls: [15, 23]
 	}]
 }
 
