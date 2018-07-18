@@ -1,64 +1,61 @@
 const { assert } = require('chai')
 const { describe, it } = require('mocha')
 
-const hilightText = (desc, keywords) => {
-	let i, j, k, max, tmp, max_index, count = 0, state_count, state_insert, before_char, queue = []
-	//create array of queue
-	for (i = 0; i < keywords.length; i++) {
-		queue.push({"size_of_char": keywords[i].hls[1] - keywords[i].hls[0],"idx": i})           
-	}
-	//sort array min to max 
-	queue.sort(function(a, b){return a.size_of_char - b.size_of_char});
-	//insert <em></em>
-	for(i = keywords.length-1; i >= 0; i--) {
-		for(j = 0; j < keywords[queue[i].idx].hls.length; j+=2) {
-			count = 0
-			state_count = -1
-			state_insert = 1
-			for(k = 0; k < desc.length; k++) {
-				if(desc[k] == '<' && desc[k + 1] && desc[k + 1] != ' ') {
-					if(desc[k] == '<' && desc[k + 1] == 'e' && desc[k + 2] == 'm' && desc[k + 3] == '>') {
-						k+=3
-						state_insert = 0
-					} else if(desc[k] == '<' && desc[k + 1] == '/' && desc[k + 2] == 'e' && desc[k + 3] == 'm' && desc[k + 4] == '>') {
-						k+=4
-						state_insert = 1
-					} else {
-						while(desc[k] != '>') {
-							k++
-						}
-					}
-				} else {
-					if(state_count == -1) {
-						if(desc[k] != ' ') {
-							state_count = 1
-						}             
-					}
-					if(state_count == 1) {
-						if(state_insert == 1) {
-							if(count == keywords[queue[i].idx].hls[j]) {
-								if(desc[k] != '<' && desc[k + 1] != 'e') {
-									if(before_char == ' ' && desc[k] == ' ') {
-									} else {
-										desc = desc.substring(0, k) + '<em>' + desc.substring(k, desc.length);
-										desc = desc.substring(0, k + queue[i].size_of_char + 4) + '</em>' + desc.substring(k + queue[i].size_of_char + 4, desc.length);
-									}
-								}                                                                                     
-							}
-						}                                                   
-						if(before_char == ' ' && desc[k] == ' ') {
-						} else {
-							before_char = desc[k]
-							count++
-						}                                                      
-					}
+const hilightText = (message) => {
+	let keywords = message.keywords
+	let raw_desc = message.raw_desc
+	let desc = message.desc
+	  let keywords_arr = []
+	  let chk
+	  for (let i = 0; i < keywords.length; i++) {
+		  if(keywords[i].hls && keywords[i].hls.length >= 2) {
+			  chk = 1
+			  for (let j = 0; j < keywords_arr.length; j++) {
+				//console.log("["+keywords_arr[j]+"] == [" + desc.substring(keywords[i].hls[0], keywords[i].hls[1]) + "]")
+				if(keywords_arr[j].localeCompare(desc.substring(keywords[i].hls[0], keywords[i].hls[1])) == 0) {
+				  //console.log("["+keywords_arr[j]+"] == [" + desc.substring(keywords[i].hls[0], keywords[i].hls[1]) + "]")
+				  //console.log('chk = 0')
+				  chk = 0
 				}
-					
-			}
+				 
+			  }
+			  //console.log(keywords[i].hls[0] + " " + keywords[i].hls[1] + " [" + desc.substring(keywords[i].hls[0], keywords[i].hls[1]) + "]")
+			  if(chk)             
+				keywords_arr.push(desc.substring(keywords[i].hls[0], keywords[i].hls[1]))                                 
+		  }
+	  }
+	  keywords_arr.sort(function(a, b){return b.length - a.length;})
+	  let max_length = keywords_arr[0].length
+	  let state_em = 1
+	  let rawdesclength = raw_desc.length
+	  //console.log(keywords_arr)
+	  for (let i = 0; i < keywords_arr.length; i++) {     
+		//console.log('ok')               
+		for (let j = 0; j < rawdesclength ; j++) {
+		  if(raw_desc.substring(j,j+4).localeCompare('<em>') == 0)  {
+			state_em = 0
+			//console.log(raw_desc.substring(j,j+4) +', state = ' + state_em)
+		  }
+		  else if(raw_desc.substring(j,j+5).localeCompare('</em>') == 0) {
+			state_em = 1
+			//console.log(raw_desc.substring(j,j+5) +', state = ' + state_em)
+		  }
+		  else if(raw_desc[j] == '<' && raw_desc[j] != ' ') {
+			while(raw_desc[j] != '>') j++
+		  }
+		  if((raw_desc.substring(j,j + keywords_arr[i].length).localeCompare(keywords_arr[i]) == 0) && state_em) {             
+			//console.log('state = ' + state_em)
+			//console.log(raw_desc.substring(j,j + keywords_arr[i].length) + ' == ' + keywords_arr[i])
+			raw_desc = raw_desc.slice(0, j) + "<em>" + raw_desc.slice(j,j + keywords_arr[i].length) + "</em>" + raw_desc.slice(j + keywords_arr[i].length,raw_desc.length)
+			j+=9+keywords_arr[i].length
+			rawdesclength += 9
+			//console.log(raw_desc)
+		  }
 		}
-	}         
-	return desc
-}
+	  }
+	  //console.log(raw_desc)
+	  return raw_desc
+  }
 
 const message = {
 	desc: 'xxx bnk48 xxxx ornbnk48 bnk',
@@ -67,6 +64,8 @@ const message = {
 		hls: [4, 9, 18, 23]
 	}, {
 		hls: [15, 23]
+	}, {
+		
 	}]
 }
 
@@ -77,7 +76,7 @@ describe('test function', () => {
 	})*/
 
 	it('hilight raw_desc', () => {
-		const raw_desc = hilightText(message.raw_desc, message.keywords)
+		const raw_desc = hilightText(message)
 		assert.equal(raw_desc, '<img src="yyy" title="bnk48"/> xxx <em>bnk48</em> xxxx <br /> <em>ornbnk48</em> bnk')
 	})
 })
